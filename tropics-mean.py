@@ -15,9 +15,7 @@ zonal_mean = specific_humidity.collapsed('longitude', iris.analysis.MEAN)
 
 # Obtaining latitudinal co-ordinates for tropics
 coord = specific_humidity.coord('latitude')
-tropics1 = coord.points <= 10
-tropics2 = coord.points >= -10
-tropics = tropics1 == tropics2 # Only taking region between 10degS and 10degN
+tropics = (coord.points <= 10) & (coord.points >= -10) # Only taking region between 10degS and 10degN
 tropics # Look at array output to check that it makes sense
 print(coord.points[tropics]) #Also check that this makes sense
 
