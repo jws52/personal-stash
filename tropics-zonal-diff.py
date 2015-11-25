@@ -42,7 +42,7 @@ q_final1 = q_trop_zonal_01.extract(iris.Constraint(Pressure=70))
 q_final2 = q_trop_zonal_02.extract(iris.Constraint(Pressure=70))
 q_final = q_final1 - q_final2
 
-# Forming the annual mean
+# Forming the annual-mean for 1999-2008
 ## This is a test, intending to put this in a for loop, or find a more efficient way to take the mean of the months
 yr0 = (q_final.coord('t').points >= (1998-1988)*360+120) & (q_final.coord('t').points < (1998-1988+1)*360+120)
 print yr0
