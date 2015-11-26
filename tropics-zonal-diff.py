@@ -21,7 +21,7 @@ q02 = q2[t_range2,:,:,:]
 print('New time co-ordinate range is for set 1: /n',q01.coord('t'))
 print('New time co-ordinate range is for set 2: /n',q02.coord('t'))
 
-# Form the zonal mean
+## Form the zonal mean
 q_zonal01 = q01.collapsed('longitude', iris.analysis.MEAN)
 q_zonal02 = q02.collapsed('longitude', iris.analysis.MEAN)
 
