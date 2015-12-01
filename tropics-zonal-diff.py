@@ -6,9 +6,10 @@ import numpy as np
 filename1 = '/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-aojed.nc'
 filename2 = '/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-aojeb.nc'
 tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
-q1= iris.load(filename1, 'specific_humidity' & tropic_lats)
-q2= iris.load(filename2, 'specific_humidity' & tropic_lats)
-
+cube1= iris.load(filename1, 'specific_humidity' & tropic_lats)
+cube2= iris.load(filename2, 'specific_humidity' & tropic_lats)
+q1= cube1[0]
+q2= cube2[0]
 #Select the overlapping time periods
 time_coord1 = q1.coord('t')
 time_coord2 = q2.coord('t')
@@ -21,9 +22,9 @@ q02 = q2[t_range2,:,:,:]
 print('New time co-ordinate range is for set 1: /n',q01.coord('t'))
 print('New time co-ordinate range is for set 2: /n',q02.coord('t'))
 
-## Form the zonal mean
-q_zonal01 = q01.collapsed('longitude', iris.analysis.MEAN)
-q_zonal02 = q02.collapsed('longitude', iris.analysis.MEAN)
+# Form the zonal mean
+q_zonal_01 = q01.collapsed('longitude', iris.analysis.MEAN)
+q_zonal_02 = q02.collapsed('longitude', iris.analysis.MEAN)
 
 # Form the mean over the tropics
 q_trop_zonal_01 = q_zonal_01.collapsed('latitude', iris.analysis.MEAN)
