@@ -30,7 +30,7 @@ q_zonal_02 = q02.collapsed('longitude', iris.analysis.MEAN)
 q_trop_zonal_01 = q_zonal_01.collapsed('latitude', iris.analysis.MEAN)
 q_trop_zonal_02 = q_zonal_02.collapsed('latitude', iris.analysis.MEAN)
 
-# Select the pressure level (100hPa for q, and 100hPa for T)
+# Select the pressure level (100hPa for q)
 q_final1 = q_trop_zonal_01.extract(iris.Constraint(Pressure=100))
 q_final2 = q_trop_zonal_02.extract(iris.Constraint(Pressure=100))
 q_final = q_final1 - q_final2
@@ -43,7 +43,7 @@ yr0 = (q_final.coord('t').points >= (t_start-1-1988)*360+120) & (q_final.coord('
 #print yr0
 q_diff = q_final[yr0]
 q_diff_mean = q_diff.collapsed('t', iris.analysis.MEAN)
-print q_diff_mean
+print "Difference in annual mean is: "q_diff_mean.data *1.608e6 "ppmv"
 
 # Plotting the difference as a function of time
 #import matplotlib.pyplot as plt
