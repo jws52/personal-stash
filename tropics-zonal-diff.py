@@ -3,8 +3,10 @@ import iris.analysis
 import numpy as np
 ##
 # Define the two filenames to work with
-filename1 = '/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-aojed.nc'
-filename2 = '/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-aojeb.nc'
+filename1 = raw_input("First experiment ID?")
+filename2 = raw_input("Second experiment ID?")
+filename1 = '/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+filename1+'.nc'
+filename2 = '/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+filename2+'.nc'
 tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
 cube1= iris.load(filename1, 'specific_humidity' & tropic_lats)
 cube2= iris.load(filename2, 'specific_humidity' & tropic_lats)
