@@ -86,10 +86,9 @@ print q_mean
 print q_season
 
 # PLOTTING
-#import matplotlib.pyplot as plt
-#import iris.plot as iplt
-#import iris.quickplot as qplot
-#qplot.plot(q_final)
-#plt.show()
+import matplotlib.pyplot as plt
+plt.plot(q_season[0],q_mean[0], 'bo', q_season[1],q_mean[1], 'yo', q_season[2],q_mean[2], 'po', q_season[3],q_mean[3], 'go')
+plt.legend(field_titles, loc=2)
+plt.show()
 
 # then compare the results to those in Met Office plots
