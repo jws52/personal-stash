@@ -1,16 +1,20 @@
 import iris
 import iris.analysis
 import numpy as np
+import os.path
 
 # LOAD DATA
 filenames1 = () # Define the two filenames to work with
 filenames2 = ()
+field_titles = ()
 response = "yes"
 while response != "no":
     filename2 = raw_input("Experiment ID for baseline run of comparison?")
     filename1 = raw_input("Experiment ID for modification run of comparison?")
+    field_title = raw_input ("Title of comparison?")
     filenames1 += ('/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+filename1+'.nc',)
     filenames2 += ('/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+filename2+'.nc',)
+    field_titles += (field_title,)
     response = raw_input("Another pair to compare? (yes/no)")
 tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
 
@@ -19,6 +23,8 @@ q_mean = [] # Location for saved data during looping for annual mean in each com
 q_season = [] # Location for saved data during looping for seasonal cycle amplitude in each comparison
 for i in range(len(filenames1)): # Loop over all comparison runs
     # Load cubes specifically for q in tropics
+    if os.path.isfile(filenames1[i]) == False: print("Error: An experiment ID not found."); Continue # Check files exist
+    if os.path.isfile(filenames2[i]) == False: print("Error: An experiment ID not found."); Continue
     cube1= iris.load(filenames1[i], 'specific_humidity' & tropic_lats)
     cube2= iris.load(filenames2[i], 'specific_humidity' & tropic_lats)
     q1= cube1[0]
@@ -80,15 +86,17 @@ for i in range(len(filenames1)): # Loop over all comparison runs
     # Taking difference in seasonal cycle
     diff_in_seasonal_cycle = (seasonal_cycle1-seasonal_cycle2)
     diff_in_seasonal_cycle *= 1.608e6        # 1.608e6 is the units conversion from kg.kg^-1 to ppmv)
-    print ("Difference in seasonal cycle is: ", diff_in_seasonal_cycle, " ppmv\n")
+    print "Difference in seasonal cycle is: ", diff_in_seasonal_cycle," ppmv"
     q_season.append(diff_in_seasonal_cycle) 
 print q_mean
 print q_season
 
 # PLOTTING
 import matplotlib.pyplot as plt
-plt.plot(q_season[0],q_mean[0], 'bo', q_season[1],q_mean[1], 'yo', q_season[2],q_mean[2], 'po', q_season[3],q_mean[3], 'go')
+plt.plot(q_mean[0],q_season[0], 'bo', q_mean[1],q_season[1], 'yo', q_mean[2],q_season[2], 'mo', q_mean[3],q_season[3], 'go')
 plt.legend(field_titles, loc=2)
+plt.xlabel("q_mean")
+plt.ylabel("q_season")
 plt.show()
 
 # then compare the results to those in Met Office plots
