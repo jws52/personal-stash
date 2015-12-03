@@ -7,6 +7,8 @@ import os.path
 filenames1 = () # Define the two filenames to work with
 filenames2 = ()
 field_titles = ()
+variables = ['specific_humidity','air_temperature']
+variable = raw_input(["Which variable to use?", variables, "(please type explicitly"])
 response = "yes"
 while response != "no":
     filename2 = raw_input("Experiment ID for baseline run of comparison?")
@@ -23,10 +25,10 @@ q_mean = [] # Location for saved data during looping for annual mean in each com
 q_season = [] # Location for saved data during looping for seasonal cycle amplitude in each comparison
 for i in range(len(filenames1)): # Loop over all comparison runs
     # Load cubes specifically for q in tropics
-    if os.path.isfile(filenames1[i]) == False: print("Error: An experiment ID not found."); Continue # Check files exist
-    if os.path.isfile(filenames2[i]) == False: print("Error: An experiment ID not found."); Continue
-    cube1= iris.load(filenames1[i], 'specific_humidity' & tropic_lats)
-    cube2= iris.load(filenames2[i], 'specific_humidity' & tropic_lats)
+    if os.path.isfile(filenames1[i]) == False: print("Error: An experiment ID not found."); continue # Check files exist
+    if os.path.isfile(filenames2[i]) == False: print("Error: An experiment ID not found."); continue
+    cube1= iris.load(filenames1[i], variable & tropic_lats)
+    cube2= iris.load(filenames2[i], variable & tropic_lats)
     q1= cube1[0]
     q2= cube2[0]
     # Select the overlapping time periods
@@ -60,8 +62,9 @@ for i in range(len(filenames1)): # Loop over all comparison runs
     q_final = q_final1 - q_final2
     final_diff = q_final[yr0]
     d_mean = final_diff.collapsed('t', iris.analysis.MEAN)
-    diff_mean = d_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
-    print("Difference in annual mean is: ",diff_mean, "ppmv")
+    if variable == 'water_vapour' : diff_mean = d_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
+    if variable == 'air_temperature' : diff_mean = d_mean.data.item() # converting from 0d array to scalar 
+    print "Difference in annual mean is: ",diff_mean
     q_mean.append(diff_mean) 
     
     # Calculation of difference in seasonal cycle amplitude
@@ -85,8 +88,8 @@ for i in range(len(filenames1)): # Loop over all comparison runs
     seasonal_cycle2 = max(climatological_mean2.data)- min(climatological_mean2.data)
     # Taking difference in seasonal cycle
     diff_in_seasonal_cycle = (seasonal_cycle1-seasonal_cycle2)
-    diff_in_seasonal_cycle *= 1.608e6        # 1.608e6 is the units conversion from kg.kg^-1 to ppmv)
-    print "Difference in seasonal cycle is: ", diff_in_seasonal_cycle," ppmv"
+    if variable == 'specific_humidity': diff_in_seasonal_cycle *= 1.608e6        # 1.608e6 is the units conversion from kg.kg^-1 to ppmv)
+    print "Difference in seasonal cycle is: ", diff_in_seasonal_cycle
     q_season.append(diff_in_seasonal_cycle) 
 print q_mean
 print q_season
