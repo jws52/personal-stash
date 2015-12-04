@@ -98,6 +98,9 @@ print q_season
 import matplotlib.pyplot as plt
 plt.plot(q_mean[0],q_season[0], 'bo', q_mean[1],q_season[1], 'yo', q_mean[2],q_season[2], 'mo', q_mean[3],q_season[3], 'go')
 plt.legend(field_titles, loc=2)
+m, b = np.polyfit(q_mean, q_season, 1)
+pearR = np.corrcoef(q_mean, q_season)[1,0] ## NEED TO PRESENT pearR IN PLOT
+plt.plot(q_mean, [(m*x + b) for x in q_mean], '-')
 plt.xlabel("q_mean")
 plt.ylabel("q_season")
 plt.show()
