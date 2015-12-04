@@ -62,7 +62,7 @@ for i in range(len(filenames1)): # Loop over all comparison runs
     q_final = q_final1 - q_final2
     final_diff = q_final[yr0]
     d_mean = final_diff.collapsed('t', iris.analysis.MEAN)
-    if variable == 'water_vapour' : diff_mean = d_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
+    if variable == 'specific_humidity' : diff_mean = d_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
     if variable == 'air_temperature' : diff_mean = d_mean.data.item() # converting from 0d array to scalar 
     print "Difference in annual mean is: ",diff_mean
     q_mean.append(diff_mean) 
