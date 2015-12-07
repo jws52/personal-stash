@@ -111,11 +111,11 @@ for i in range(len(filenames1)): # Loop over all comparison runs
     # PLOTTING for point 2
     #For annual mean
     d_mean.data *= 1.608e6
-    plt.subplot(211)
+    plt.subplot(312)
     plt.plot(d_mean.coord('longitude').points, d_mean.data)
     plt.plot(d_mean.coord('longitude').points, [q_mean for x in d_mean.coord('longitude').points])
     # For seasonal difference
-    plt.subplot(212)
+    plt.subplot(313)
     plt.plot(d_mean.coord('longitude').points, d_mean.data)
     plt.plot(d_mean.coord('longitude').points, [diff_in_seasonal_cycle.collapsed('latitude', iris.analysis.MEAN) for x in d_mean.coord('longitude').points])
     
@@ -123,6 +123,7 @@ print q_mean
 print q_season
 
 # PLOTTING for point 1
+plt.subplot(311)
 plt.plot(q_mean[0],q_season[0], 'bo', q_mean[1],q_season[1], 'yo', q_mean[2],q_season[2], 'mo', q_mean[3],q_season[3], 'go')
 plt.legend(field_titles, loc=2)
 m, b = np.polyfit(q_mean, q_season, 1)
