@@ -10,14 +10,14 @@ field_titles = ()
 variables = ['specific_humidity','air_temperature']
 variable = raw_input(["Which variable to use?", variables, "(please type explicitly"])
 response = "yes"
-while response != "no":
-    filename2 = raw_input("Experiment ID for baseline run of comparison?")
-    filename1 = raw_input("Experiment ID for modification run of comparison?")
-    field_title = raw_input ("Title of comparison?")
+#while response != "no":
+    filename2 = [aojeb, antie, antie, antie] #raw_input("Experiment ID for baseline run of comparison?")
+    filename1 = [aojed, antng, dlkxi, anvti] #raw_input("Experiment ID for modification run of comparison?")
+    field_title = ['ozone', 'radiative', 'ice microphysics', 'cirrus spreading'] #raw_input ("Title of comparison?")
     filenames1 += ('/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+filename1+'.nc',)
     filenames2 += ('/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+filename2+'.nc',)
     field_titles += (field_title,)
-    response = raw_input("Another pair to compare? (yes/no)")
+    #response = raw_input("Another pair to compare? (yes/no)")
 tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
 
 # ANALYSIS
@@ -94,13 +94,14 @@ for i in range(len(filenames1)): # Loop over all comparison runs
 print q_mean
 print q_season
 
-# PLOTTING
+# PLOTTING for point 1
 import matplotlib.pyplot as plt
 plt.plot(q_mean[0],q_season[0], 'bo', q_mean[1],q_season[1], 'yo', q_mean[2],q_season[2], 'mo', q_mean[3],q_season[3], 'go')
 plt.legend(field_titles, loc=2)
 m, b = np.polyfit(q_mean, q_season, 1)
-pearR = np.corrcoef(q_mean, q_season)[1,0] ## NEED TO PRESENT pearR IN PLOT
+pearR = np.corrcoef(q_mean, q_season)[1,0]
 plt.plot(q_mean, [(m*x + b) for x in q_mean], '-')
+plt.figtext(0.6, 0.2,"Correlation R = "+'{:4.2f}'.format(pearR))
 plt.xlabel("q_mean")
 plt.ylabel("q_season")
 plt.show()
