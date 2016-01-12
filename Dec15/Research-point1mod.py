@@ -6,28 +6,41 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os.path
 
+    # Function for collapsing data to average over selected regions
+def collaps(cube, press, yr0):
+    cube_zonal = cube.collapsed('longitude', iris.analysis.MEAN) # zonal mean
+    cube_trop_zonal = cube_zonal.collapsed('latitude', iris.analysis.MEAN) # mean over the tropics
+    cube_final = cube_trop_zonal.extract(iris.Constraint(Pressure=press)) # Select the pressure level (100hPa for q)
+    cube_final_t = cube_final[yr0] # Selecting time region
+    return cube_final_t
 
 def load_and_analyse():
-    # LOAD DATA
+    # Function to load in data and produce fields for monthly means, annual means, and seasonal cycle amplitude for each filename supplied
     filenames1 = () # Define the two filenames to work with
     filenames2 = ()
     variables = ['specific_humidity','air_temperature', 'upward_air_velocity']
     variable1 = raw_input(["Which two variable to use?", variables, "(please type explicitly and press enter after each)"])
     variable2 = raw_input(["And the second variable is?"])
+     
+    press1 = input(["What pressure level (hPa) to select for "+variable1+"? (options are 500, 400, 300, 250, 200, 150, 100, 70, 50, 30, 20, 10)"])
+    press2 = input(["What pressure level (hPa) to select for "+variable2+"? (options are the same)"])
+    if 'press1' not in locals():
+        if variable1 == 'specific_humidity': press1 = 70
+        if variable1 == 'air_temperature': press1 = 100
+        if variable1 == 'upward_air_velocity': press1 = 100
+        print "Default pressure being applied for "+variable1+":"+press1+"hPa."
+    if 'press2' not in locals():
+        if variable2 == 'specific_humidity': press2 = 70
+        if variable2 == 'air_temperature': press2 = 100
+        if variable2 == 'upward_air_velocity': press2 = 100
+        print "Default pressure being applied for "+variable2+":"+press2+"hPa."
+    
     for name in ['aojeb', 'antie', 'antie', 'antie', 'antie', 'antie', 'dkwyj']: filenames2 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',)
     for name in ['aojed', 'antng', 'dlkxi', 'anvti', 'dlhbk', 'anxal', 'dkytg']: filenames1 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',) 
     field_titles = ('ozone radiative feedback', 'radiative heating', 'ice microphysics', 'cirrus spreading rate', 'convection', 'ice optics', 'q vertical advection - interpolation')
     tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
 
     # ANALYSIS
-    # Function for collapsing data to average over selected regions
-    def collaps(cube, press, yr0):
-        cube_zonal = cube.collapsed('longitude', iris.analysis.MEAN) # zonal mean
-        cube_trop_zonal = cube_zonal.collapsed('latitude', iris.analysis.MEAN) # mean over the tropics
-        cube_final = cube_trop_zonal.extract(iris.Constraint(Pressure=press)) # Select the pressure level (100hPa for q)
-        cube_final_t = cube_final[yr0] # Selecting time region
-        return cube_final_t
-
     hum_ratio = iris.coords.AuxCoord(1.608E6, long_name='Unit conversion from specific humidity to relative humidity by volume', units ='ppmv/kg.kg^-1')
     run_monthly_means = raw_input("Do you want to output dataset for monthly mean values? (y/n)")
 
@@ -51,6 +64,7 @@ def load_and_analyse():
         q2= cube2[0]
         w1= cube3[0]
         w2= cube4[0]
+        print q1.coord('Pressure').points
 
         print "Select the overlapping time periods"
         time_coord1 = q1.coord('t')
@@ -74,13 +88,6 @@ def load_and_analyse():
         t_end = 2008 #input("Endingyear? Expect 2008.")
         yr0 = (q01.coord('t').points >= (t_start-1-1988)*360+120) & (q01.coord('t').points < (t_end-1988)*360+120)
         #print yr0
-     
-        if variable1 == 'specific_humidity': press1 = 70
-        if variable1 == 'air_temperature': press1 = 100
-        if variable1 == 'upward_air_velocity': press1 = 100
-        if variable2 == 'specific_humidity': press2 = 70
-        if variable2 == 'air_temperature': press2 = 100
-        if variable2 == 'upward_air_velocity': press2 = 100
 
         # Collapsing data to average over selected regions
         q01_collapsed = collaps(q01, press1, yr0)
@@ -94,8 +101,12 @@ def load_and_analyse():
             if variable1 == 'specific_humidity' :
                 q_month_mean = q_final*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 q_month_mean.rename('relative_humidity')
-            if variable1 == 'air_temperature' : q_month_mean = q_final 
-            if variable1 == 'upward_air_velocity': q_month_mean = q_final
+            if variable1 == 'air_temperature' : 
+                q_month_mean = q_final 
+                q_month_mean.rename('air_temperature')
+            if variable1 == 'upward_air_velocity': 
+                q_month_mean = q_final
+                q_month_mean.rename('upward_air_velocity')
         print "Difference in monthly mean for", variable1, "is: ",q_month_mean
         q_months.append(q_month_mean) 
         # Calculating monthly means for variable 2
@@ -104,8 +115,12 @@ def load_and_analyse():
             if variable2 == 'specific_humidity' : 
                 w_month_mean = w_final*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 w_month_mean.rename('relative_humidity')
-            if variable2 == 'air_temperature' : w_month__mean = w_final 
-            if variable2 == 'upward_air_velocity': w_month_mean = w_final
+            if variable2 == 'air_temperature' : 
+                w_month_mean = w_final 
+                w_month_mean.rename('air_temperature')
+            if variable2 == 'upward_air_velocity': 
+                w_month_mean = w_final
+                w_month_mean.rename('upward_air_velocity')
         print "Difference in monthly mean for", variable2, "is: ",w_month_mean
         w_months.append(w_month_mean) 
     
@@ -211,7 +226,8 @@ def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season,
         b = [0]*len(x)
         pearR = [0]*len(x)
         plot_levels = []
-        plot_levels += [i*0.025 for i in range(len(x))]
+        plot_levels += [i*0.027 for i in range(1+len(x))]
+        plt.figtext(0.45, 0.88-plot_levels[0],"Correlation R =    and slope of fitted line m =")
         for j in range(len(x)):
             if lag_steps == 0:
                  m[j], b[j] = np.polyfit(x[j].data,y[j].data, 1)
@@ -219,11 +235,12 @@ def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season,
             else:
                  m[j], b[j] = np.polyfit(x[j].data[:-1*lag_steps],y[j].data[lag_steps:], 1)
                  pearR[j] = np.corrcoef(x[j].data[:-1*lag_steps],y[j].data[lag_steps:])[1,0]           
+
             plt.plot(x[j].data, [(m[j]*x1 + b[j]) for x1 in x[j].data], '-', linewidth=2)
-            plt.figtext(0.7, 0.35-plot_levels[j],"Correlation R = "+'{:4.2f}'.format(pearR[j]))
+            plt.figtext(0.45, 0.88-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"             m = "+'{:4.2f}'.format(m[j]))
         plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months")    
-   
-    plt.legend(field_titles, loc=2)
+    if m >= -0.1:  plt.legend(field_titles, loc=2)
+    else: plt.legend(field_titles, loc=3)
     if variable1 == 'air_temperature': plt.xlabel("difference to T"+xname+" (C)")
     if variable1 == 'specific_humidity': plt.xlabel("difference to q "+xname+"(ppmv)")
     if variable1 == 'upward_air_velocity': plt.xlabel("difference to w"+xname+" (units unknown)")
@@ -234,3 +251,4 @@ def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season,
     plt.show()
     return()
     # then compare the results to those in Met Office plots
+
