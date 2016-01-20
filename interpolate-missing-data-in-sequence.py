@@ -1,4 +1,4 @@
-# This Python script fills in a missing point in sequential data.
+# This Python script calculates data for a missing point in a sequential dimension in Iris format by using linear interpolation.
 # (e.g. a series of monthly data fields with one month's data missing in the middle)
 # Any questions, ask jws52 [at] cam.ac.uk
 
