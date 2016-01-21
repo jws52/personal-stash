@@ -21,7 +21,7 @@ def load_and_analyse():
     variables = ['specific_humidity','air_temperature', 'upward_air_velocity']
     variable1 = raw_input(["Which two variable to use?", variables, "(please type explicitly and press enter after each)"])
     variable2 = raw_input(["And the second variable is?"])
-     
+
     press1 = input(["What pressure level (hPa) to select for "+variable1+"? (options are 500, 400, 300, 250, 200, 150, 100, 70, 50, 30, 20, 10)"])
     press2 = input(["What pressure level (hPa) to select for "+variable2+"? (options are the same)"])
     if 'press1' not in locals():
@@ -34,10 +34,10 @@ def load_and_analyse():
         if variable2 == 'air_temperature': press2 = 100
         if variable2 == 'upward_air_velocity': press2 = 100
         print "Default pressure being applied for "+variable2+":"+press2+"hPa."
-    
-    for name in ['aojeb', 'antie', 'antie', 'antie', 'antie', 'antie', 'dkwyj']: filenames2 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',)
-    for name in ['aojed', 'antng', 'dlkxi', 'anvti', 'dlhbk', 'anxal', 'dkytg']: filenames1 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',) 
-    field_titles = ('ozone radiative feedback', 'radiative heating', 'ice microphysics', 'cirrus spreading rate', 'convection', 'ice optics', 'q vertical advection - interpolation')
+
+    for name in ['anmxa', 'antie', 'dkwyj', 'antie', 'antie', 'antie', 'antie', 'antie', 'aojeb']: filenames2 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',)
+    for name in ['dkwyj', 'dlvpd', 'dkytg', 'antng', 'anxal', 'dlkxi', 'dlhbk', 'anvti', 'aojed']: filenames1 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',)
+    field_titles = ('theta vertical advection - interpolation', 'theta vertical advection - conservation', 'q vertical advection - interpolation', 'radiative heating', 'ice optics','ice microphysics', 'convection','cirrus spreading rate', 'ozone radiative feedback')
     tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
 
     # ANALYSIS
@@ -52,7 +52,7 @@ def load_and_analyse():
     w_months = []
     for i in range(len(filenames1)): # Loop over all comparison runs
         print field_titles[i]
-    
+
         print "Load cubes specifically for q in tropics"
         if os.path.isfile(filenames1[i]) == False: print("Error: An experiment ID not found."); continue # Check files exist
         if os.path.isfile(filenames2[i]) == False: print("Error: An experiment ID not found."); continue
@@ -77,11 +77,12 @@ def load_and_analyse():
         w02 = w2[t_range2,:,:,:]
         # print('New time co-ordinate range is for set 1: /n',q01.coord('t'))
         # print('New time co-ordinate range is for set 2: /n',q02.coord('t'))
-        
-        ### Removing any dates that do not appear throughout the time series OR adding the missing months to the dataset
-        
+
+        ### Error-checking or Removing any dates that do not appear throughout the time series OR adding the missing months to the dataset
+        for cube in [q01,q02,w01,w02]:    # upward_air_velocity can give a unit mismatch between the two input files. This crudely matches them.
+            if cube.units == "unknown": cube.units = 1
         ###
-   
+
         # Extracting region in time suitable for comparison
         ## Can modify so that script takes maximum number of 12-month periods from q_01.coord('t').points
         t_start = 1999 #input("Starting year? Expect 1999.")
@@ -94,50 +95,52 @@ def load_and_analyse():
         q02_collapsed = collaps(q02, press1, yr0)
         w01_collapsed = collaps(w01, press2, yr0)
         w02_collapsed = collaps(w02, press2, yr0)
-    
+
         # Calculating monthly means for variable 1
+        print q01_collapsed
+        print q02_collapsed
         q_final = q01_collapsed - q02_collapsed
         if run_monthly_means == "y":
             if variable1 == 'specific_humidity' :
                 q_month_mean = q_final*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 q_month_mean.rename('relative_humidity')
-            if variable1 == 'air_temperature' : 
-                q_month_mean = q_final 
+            if variable1 == 'air_temperature' :
+                q_month_mean = q_final
                 q_month_mean.rename('air_temperature')
-            if variable1 == 'upward_air_velocity': 
+            if variable1 == 'upward_air_velocity':
                 q_month_mean = q_final
                 q_month_mean.rename('upward_air_velocity')
-        print "Difference in monthly mean for", variable1, "is: ",q_month_mean
-        q_months.append(q_month_mean) 
+            print "Difference in monthly mean for", variable1, "is: ",q_month_mean
+            q_months.append(q_month_mean)
         # Calculating monthly means for variable 2
         w_final = w01_collapsed - w02_collapsed
         if run_monthly_means == "y":
-            if variable2 == 'specific_humidity' : 
+            if variable2 == 'specific_humidity' :
                 w_month_mean = w_final*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 w_month_mean.rename('relative_humidity')
-            if variable2 == 'air_temperature' : 
-                w_month_mean = w_final 
+            if variable2 == 'air_temperature' :
+                w_month_mean = w_final
                 w_month_mean.rename('air_temperature')
-            if variable2 == 'upward_air_velocity': 
+            if variable2 == 'upward_air_velocity':
                 w_month_mean = w_final
                 w_month_mean.rename('upward_air_velocity')
-        print "Difference in monthly mean for", variable2, "is: ",w_month_mean
-        w_months.append(w_month_mean) 
-    
+            print "Difference in monthly mean for", variable2, "is: ",w_month_mean
+            w_months.append(w_month_mean)
+
         # Calculating difference in annual mean for variable 1
         q_final_mean = q_final.collapsed('t', iris.analysis.MEAN)
         if variable1== 'specific_humidity' : q_diff_mean = q_final_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
         if variable1 == 'air_temperature' : q_diff_mean = q_final_mean.data.item() # converting from 0d array to scalar 
         if variable1 == 'upward_air_velocity': q_diff_mean = q_final_mean.data.item()
         print "Difference in annual mean for", variable1, "is: ",q_diff_mean
-        q_mean.append(q_diff_mean) 
+        q_mean.append(q_diff_mean)
        # Calculating difference in annual mean for variable 2
         w_final_mean = w_final.collapsed('t', iris.analysis.MEAN)
         if variable2 == 'specific_humidity' : wiff_mean = w_final_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
         if variable2 == 'air_temperature' : wiff_mean = w_final_mean.data.item() # converting from 0d array to scalar 
         if variable2 == 'upward_air_velocity': wiff_mean = w_final_mean.data.item()
         print "Difference in annual mean for",variable2, " is: ",wiff_mean
-        w_mean.append(wiff_mean) 
+        w_mean.append(wiff_mean)
 
         print "Calculation of difference in seasonal cycle amplitude"
         # Forming the climatological mean for t_start to t_end
@@ -156,9 +159,9 @@ def load_and_analyse():
         if variable1 == 'specific_humidity': q_diff_in_seasonal_cycle *= 1.608e6        # 1.608e6 is the units conversion from kg.kg^-1 to ppmv)
         if variable2 == 'specific_humidity': w_diff_in_seasonal_cycle *= 1.608e6        # 1.608e6 is the units conversion from kg.kg^-1 to ppmv)
         print "Difference in seasonal cycle for ",variable1,"is: ", q_diff_in_seasonal_cycle
-        q_season.append(q_diff_in_seasonal_cycle) 
+        q_season.append(q_diff_in_seasonal_cycle)
         print "Difference in seasonal cycle for ",variable2,"is: ", w_diff_in_seasonal_cycle
-        w_season.append(w_diff_in_seasonal_cycle) 
+        w_season.append(w_diff_in_seasonal_cycle)
         print "End this loop OK"
 
     print "All loops finished OK. Results outputs are:"
@@ -202,24 +205,25 @@ def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season,
         xname = "monthly mean"
         yname = "monthly mean"
     else: print "Cannot plot"
-    
-    plt.gca().set_color_cycle(['red', 'blue', 'green', 'cyan', 'magenta', 'yellow', 'black'])
-    
+
+    plt.gca().set_color_cycle(['limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'])
+
     if response in (1, 2, 3, 4):
         # Plot
-        plt.plot(x[0],y[0], 'o',x[1],y[1], 'o',x[2],y[2], 'o',x[3],y[3], 'o',x[4],y[4], 'o',x[5],y[5], 'o',x[6],y[6], 'o' , markersize=16)
+        plt.plot(x[0], y[0], 'o', x[1], y[1], 'o',x[2], y[2], 'o', x[3], y[3], 'o', x[4], y[4], 'o', x[5], y[5], 'o', x[6], y[6], 'o', x[7], y[7], 'o', x[8], y[8], 'o', markersize=16)
+        plt.plot(0, 0, 'k+', ms=50)
         # Regression line
         m, b = np.polyfit(x, y, 1)
         pearR = np.corrcoef(x, y)[1,0]
         plt.plot(x, [(m*x1 + b) for x1 in x], '-')
-        plt.figtext(0.6, 0.2,"Correlation R = "+'{:4.2f}'.format(pearR))
+        plt.figtext(0.6, 0.25, "Correlation R = "+'{:4.2f}'.format(pearR))
         plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)")
 
     elif response == 5:
         # Plot
-        if lag_steps == 0: 
+        if lag_steps == 0:
             for j in range(len(x)): plt.plot(x[j].data[:],y[j].data[:], 'o', markersize=6)
-        else: 
+        else:
             for j in range(len(x)): plt.plot(x[j].data[:-1*lag_steps],y[j].data[lag_steps:], 'o', markersize=6)
         # Regression lines
         m =[0]*len(x)
@@ -231,14 +235,14 @@ def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season,
         for j in range(len(x)):
             if lag_steps == 0:
                  m[j], b[j] = np.polyfit(x[j].data,y[j].data, 1)
-                 pearR[j] = np.corrcoef(x[j].data,y[j].data)[1,0]           
+                 pearR[j] = np.corrcoef(x[j].data,y[j].data)[1,0]
             else:
                  m[j], b[j] = np.polyfit(x[j].data[:-1*lag_steps],y[j].data[lag_steps:], 1)
-                 pearR[j] = np.corrcoef(x[j].data[:-1*lag_steps],y[j].data[lag_steps:])[1,0]           
+                 pearR[j] = np.corrcoef(x[j].data[:-1*lag_steps],y[j].data[lag_steps:])[1,0]
 
             plt.plot(x[j].data, [(m[j]*x1 + b[j]) for x1 in x[j].data], '-', linewidth=2)
             plt.figtext(0.45, 0.88-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"             m = "+'{:4.2f}'.format(m[j]))
-        plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months")    
+        plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months")
     if m >= -0.1:  plt.legend(field_titles, loc=2)
     else: plt.legend(field_titles, loc=3)
     if variable1 == 'air_temperature': plt.xlabel("difference to T"+xname+" (C)")
@@ -251,4 +255,3 @@ def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season,
     plt.show()
     return()
     # then compare the results to those in Met Office plots
-
