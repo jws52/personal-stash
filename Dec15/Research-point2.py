@@ -4,14 +4,15 @@ import numpy as np
 import os.path
 import matplotlib.pyplot as plt
 import iris.coord_categorisation
+plt.gca().set_color_cycle(['limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'])
 
 # LOAD DATA
 # Define the two filenames to work with
 filenames1 = ()
 filenames2 = ()
-for name in ['aojeb', 'antie', 'antie', 'antie', 'antie', 'antie', 'dkwyj']: filenames2 += ('/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+name+'.nc',)
-for name in ['aojed', 'antng', 'dlkxi', 'anvti', 'dlhbk', 'anxal', 'dkytg']: filenames1 += ('/group_workspaces/jasmin2/ukca/jsmith52/tq-selections/tq-selection-'+name+'.nc',) 
-field_titles = ('ozone radiative feedback', 'radiative heating', 'ice microphysics', 'cirrus spreading rate', 'convection', 'ice optics', 'q vertical advection - interpolation')
+for name in ['anmxa', 'antie', 'dkwyj', 'antie', 'antie', 'antie', 'antie', 'antie', 'aojeb']: filenames2 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',)
+for name in ['dkwyj', 'dlvpd', 'dkytg', 'antng', 'anxal', 'dlkxi', 'dlhbk', 'anvti', 'aojed']: filenames1 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',)
+field_titles = ('theta vertical advection - interpolation', 'theta vertical advection - conservation', 'q vertical advection - interpolation', 'radiative heating', 'ice optics','ice microphysics', 'convection','cirrus spreading rate', 'ozone radiative feedback')
 variables = ['specific_humidity','air_temperature']
 variable = raw_input(["Which variable to use?", variables, "(please type explicitly"])
 tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
@@ -46,6 +47,13 @@ for i in range(len(filenames1)):
     yr0 = (q01.coord('t').points >= (t_start-1-1988)*360+120) & (q01.coord('t').points < (t_end-1988)*360+120)
     ### Constrain the pressure level to region of interest (near the tropopause)
     
+    ## Error-checking the files
+    for cube in [q01, q02]:
+        if cube.coord('longitude').circular== False: 
+            print "Correcting longitude coordinate description to be circular (remnant of interpolation and merge method)"
+            cube.coord('longitude').circular=True
+    ##
+    
     ## Calculation of difference in annual mean, averaged in zonal and meridional
     q_p_final = q01 - q02
     final_diff = q_p_final[yr0]
@@ -79,16 +87,17 @@ for i in range(len(filenames1)):
 
     # PLOTTING
     ### For annual mean bias profile in vertical
-    plt.subplot(211)
+    #plt.subplot(211)
     plt.plot(q_mean_averaged.data, q_mean_averaged.coord('Pressure').points) 
-    plt.legend(field_titles, loc=2)
+    plt.legend(field_titles, loc=4)
     ### For difference in seasonal cycle profile in vertical
-    plt.subplot(212)
-    plt.plot(q_season_averaged.data, q_season_averaged.coord('Pressure').points) 
-    plt.legend(field_titles, loc=2)
+    #plt.subplot(212)
+    #plt.gca().set_color_cycle(['limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'])
+    #plt.plot(q_season_averaged.data, q_season_averaged.coord('Pressure').points) 
+    #plt.legend(field_titles, loc=2)
 
 ### plt.axes labels and legends
-plt.subplot(211)
+#plt.subplot(211)
 plt.plot([0 for x in q_season_averaged.coord('Pressure').points],q_season_averaged.coord('Pressure').points, 'k--')
 plt.title('Vertical profile of annual mean bias for'+variable)
 plt.yscale('log')
@@ -99,18 +108,18 @@ plt.ylabel('pressure (hPa)')
 if variable == 'specific_humidity': plt.xlabel('difference (ppmv)')
 if variable == 'air_temperature': plt.xlabel('difference (C)')
 plt.gca().invert_yaxis()
-plt.subplot(212)
-plt.plot([0 for x in q_season_averaged.coord('Pressure').points],q_season_averaged.coord('Pressure').points, 'k--')
-plt.title('Vertical profile of difference in seasonal cycle for'+variable)
-plt.yscale('log')
-plt.ylim(50, 500)
-if variable == 'specific_humidity': plt.xlim(-200, 200)
-if variable == 'air_temperature': plt.xlim(-2.6, 2.6)
-plt.ylabel('pressure (hPa)')
-if variable == 'specific_humidity': plt.xlabel('difference (ppmv)')
-if variable == 'air_temperature': plt.xlabel('difference (C)')
-plt.gca().invert_yaxis()
-plt.tight_layout()
+#plt.subplot(212)
+#plt.plot([0 for x in q_season_averaged.coord('Pressure').points],q_season_averaged.coord('Pressure').points, 'k--')
+#plt.title('Vertical profile of difference in seasonal cycle for'+variable)
+#plt.yscale('log')
+#plt.ylim(50, 500)
+#if variable == 'specific_humidity': plt.xlim(-200, 200)
+#if variable == 'air_temperature': plt.xlim(-2.6, 2.6)
+#plt.ylabel('pressure (hPa)')
+#if variable == 'specific_humidity': plt.xlabel('difference (ppmv)')
+#if variable == 'air_temperature': plt.xlabel('difference (C)')
+#plt.gca().invert_yaxis()
+#plt.tight_layout()
 plt.show()
 # then compare the results to those in Met Office plots
 
