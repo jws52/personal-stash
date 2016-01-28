@@ -261,9 +261,9 @@ def load_and_analyse():
     print "cube3_season\n", cube3_season
     print "cube3_months\n", cube3_months
     print "cube3_climatological_months\n", cube3_climatological_months
-    return(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2)
+    return(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type)
 
-def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2):
+def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type):
     print "PLOTTING"
 
     # Plot options from (1-4), switch the comments so that the preferred one is active
@@ -280,7 +280,7 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         yname = "amplitude of seasonal cycle"
     elif response == 3:
         x = cube1_season
-        y = cube1_mean
+        y = cube3_mean
         xname = "amplitude of seasonal cycle"
         yname = "annual mean"
     elif response == 4:
@@ -304,12 +304,13 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         else: yname = "climatological months"
     else: print "Cannot plot"
     
+    ### Extra fields in calc_type == 2 at the beginning of list means that this colour cycle fails to apply to the same fields.
     plt.gca().set_color_cycle(['limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'])
  
     if response in (1, 2, 3, 4):
         # Plot
-        plt.plot(x[0], y[0], 'o', x[1], y[1], 'o',x[2], y[2], 'o', x[3], y[3], 'o', x[4], y[4], 'o', x[5], y[5], 'o', x[6], y[6], 'o', x[7], y[7], 'o', x[8], y[8], 'o', markersize=16)
-        plt.plot(0, 0, 'k+', ms=50)
+        for j in range(len(x)): plt.plot(x[j], y[j], 'o', markersize=16)
+        if calc_type == 1: plt.plot(0, 0, 'k+', ms=50)
         # Regression line
         m, b = np.polyfit(x, y, 1)
         pearR = np.corrcoef(x, y)[1,0]
@@ -381,12 +382,12 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         comment = "Difference to "
     elif calc_type == 2:
         comment = ""
-    if variable1 == 'air_temperature': plt.xlabel(comment, "T"+xname+" (C)")
-    if variable1 == 'specific_humidity': plt.xlabel(comment, "cube1 "+xname+"(ppmv)")
-    if variable1 == 'upward_air_velocity': plt.xlabel(comment, " w"+xname+" (units unknown)")
-    if variable2 == 'specific_humidity': plt.ylabel(comment, " cube1 "+yname+" (ppmv)")
-    if variable2 == 'air_temperature': plt.ylabel(comment, " T "+yname+" (C)")
-    if variable2 == 'upward_air_velocity': plt.ylabel(comment, " w "+yname+" (units unknown)")
+    if variable1 == 'air_temperature': plt.xlabel(comment+"T"+xname+" (C)")
+    if variable1 == 'specific_humidity': plt.xlabel(comment+"q "+xname+"(ppmv)")
+    if variable1 == 'upward_air_velocity': plt.xlabel(comment+"w"+xname+" (units unknown)")
+    if variable2 == 'specific_humidity': plt.ylabel(comment+"q "+yname+" (ppmv)")
+    if variable2 == 'air_temperature': plt.ylabel(comment+"T "+yname+" (C)")
+    if variable2 == 'upward_air_velocity': plt.ylabel(comment+"w "+yname+" (units unknown)")
 
     plt.show()
     return()
