@@ -69,153 +69,96 @@ def load_and_analyse():
         
     # ANALYSIS
     hum_ratio = iris.coords.AuxCoord(1.608E6, long_name='Unit conversion from specific humidity to relative humidity by volume', units ='ppmv/kg.kg^-1')
-    run_monthly_means = raw_input("Do you want to output dataset for monthly mean values? (y/n)")
-
-    q_mean = [] # Location for saved data during looping for annual mean in q each comparison
-    q_season = [] # Location for saved data during looping for seasonal cycle amplitude in q in each comparison
-    q_months = []
-    q_climatological_months = []
-    w_mean = [] # Location for saved for data during looping for annual mean in w in each comparison
-    w_season = [] # Location for saved data during looping for seasonal cycle amplitude in w in each comparison
-    w_months = []
-    w_climatological_months = []
     
-    if calc_type ==2:
-        for i in range(len(filenames1)): # Loop over all comparison runs
-            print "Calculating for ", field_titles[i]
-            print "Loading cubes"
-            cube1= iris.load_cube(filenames1[i], variable1)
-            cube3= iris.load_cube(filenames1[i], variable2)
-
-            print "Calculating region in time suitable for comparison"
-            ## Can modify so that script takes maximum number of 12-month periods from q_01.coord('t').points
-            t_start = 1999 #input("Starting year? Expect 1999.")
-            t_end = 2008 #input("Endingyear? Expect 2008.")
-            yr0 = (cube1.coord('t').points >= (t_start-1-1988)*360+120) & (cube1.coord('t').points < (t_end-1988)*360+120)
-            #print yr0
-            
-            print "Collapsing data to average over selected regions"
-            cube1_collapsed = collaps(cube1, latlim, press1, yr0)
-            cube3_collapsed = collaps(cube3, latlim, press2, yr0)
-            
-            print "Calculating monthly means (###this needs modifying to agree with cube1 and cube 3 instead of q"
-            if run_monthly_means == "y":
-                if variable1 == 'specific_humidity' :
-                    q_month_mean = q_final*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
-                    q_month_mean.rename('relative_humidity')
-                if variable1 == 'air_temperature' : 
-                    q_month_mean = q_final 
-                    q_month_mean.rename('air_temperature')
-                if variable1 == 'upward_air_velocity': 
-                    q_month_mean = q_final
-                    q_month_mean.rename('upward_air_velocity')
-
-            print "Calculating differences in annual mean (###this needs modifying to agree with cube1 instead of q)"
-            q_final_mean = q_final.collapsed('t', iris.analysis.MEAN)
-            if variable1== 'specific_humidity' : q_diff_mean = q_final_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
-            if variable1 == 'air_temperature' : q_diff_mean = q_final_mean.data.item() # converting from 0d array to scalar 
-            if variable1 == 'upward_air_velocity': q_diff_mean = q_final_mean.data.item()
-            print "Difference in annual mean for", variable1, "is: ",q_diff_mean
-            q_mean.append(q_diff_mean) 
-
-            print "Calculation of difference in seasonal cycle amplitude (###need to fill in this bit)"
-            
-            print "End this loop OK
-
-
+    cube1_mean = [] # Locations for saving data during looping
+    cube1_season = [] 
+    cube1_months = []
+    cube1_climatological_months = []
+    cube3_mean = [] 
+    cube3_season = []
+    cube3_months = []
+    cube3_climatological_months = []
+    
     if calc_type == 1:
         for i in range(len(filenames1)): # Loop over all comparison runs
             print "Calculating for ", field_titles[i]
             print "Loading cubes"
             if os.path.isfile(filenames1[i]) == False: print("Error: An experiment ID not found."); continue # Check files exist
             if os.path.isfile(filenames2[i]) == False: print("Error: An experiment ID not found."); continue
-            q1= iris.load_cube(filenames1[i], variable1)
-            q2= iris.load_cube(filenames2[i], variable1)
-            w1= iris.load_cube(filenames1[i], variable2)
-            w2= iris.load_cube(filenames2[i], variable2)
+            cube1= iris.load_cube(filenames1[i], variable1)
+            cube2= iris.load_cube(filenames2[i], variable1)
+            cube3= iris.load_cube(filenames1[i], variable2)
+            cube4= iris.load_cube(filenames2[i], variable2)
             #print "Cube1 is ", cube1
-            #print q1.coord('Pressure').points      
+            #print cube1.coord('Pressure').points      
 
             print "Selecting the overlapping time periods"
-            time_coord1 = q1.coord('t')
-            time_coord2 = q2.coord('t')
+            time_coord1 = cube1.coord('t')
+            time_coord2 = cube2.coord('t')
             t_range1 = (time_coord1.points >= time_coord2.points[0]) & (time_coord1.points <= time_coord2.points[-1])
             t_range2 = (time_coord2.points >= time_coord1.points[0]) & (time_coord2.points <= time_coord1.points[-1])
-            q01 = q1[t_range1,:,:,:]
-            q02 = q2[t_range2,:,:,:]
-            w01 = w1[t_range1,:,:,:]
-            w02 = w2[t_range2,:,:,:]
-            print 'New time co-ordinate range is for set 1: /n',q01.coord('t')
-            print 'New time co-ordinate range is for set 2: /n',q02.coord('t')
+            cube01 = cube1[t_range1,:,:,:]
+            cube02 = cube2[t_range2,:,:,:]
+            cube03 = cube3[t_range1,:,:,:]
+            cube04 = cube4[t_range2,:,:,:]
+            #print 'New time co-ordinate range is for set 1: /n',cube01.coord('t')
+            #print 'New time co-ordinate range is for set 2: /n',cube02.coord('t')
             
             print "Calculating region in time suitable for comparison"
-            ## Can modify so that script takes maximum number of 12-month periods from q_01.coord('t').points
+            ## Can modify so that script takes maximum number of 12-month periods from cube_01.coord('t').points
             t_start = 1999 #input("Starting year? Expect 1999.")
             t_end = 2008 #input("Endingyear? Expect 2008.")
-            yr0 = (q01.coord('t').points >= (t_start-1-1988)*360+120) & (q01.coord('t').points < (t_end-1988)*360+120)
+            yr0 = (cube01.coord('t').points >= (t_start-1-1988)*360+120) & (cube01.coord('t').points < (t_end-1988)*360+120)
             #print yr0      
 
             ### Error-checking or Removing any dates that do not appear throughout the time series OR adding the missing months to the dataset
-            for cube in [q01,q02,w01,w02]:    # upward_air_velocity can give a unit mismatch between the two input files. This crudely matches.
+            for cube in [cube01,cube02,cube03,cube04]:    # upward_air_velocity can give a unit mismatch between the two input files. This crudely matches.
                 if cube.units == "unknown": cube.units = 1
             ###
      
             print "Collapsing data to average over selected regions"
-            q01_collapsed = collaps(q01, latlim, press1, yr0)
-            q02_collapsed = collaps(q02, latlim, press1, yr0)
-            w01_collapsed = collaps(w01, latlim, press2, yr0)
-            w02_collapsed = collaps(w02, latlim, press2, yr0)
-        
+            cube01_collapsed = collaps(cube01, latlim, press1, yr0)
+            cube02_collapsed = collaps(cube02, latlim, press1, yr0)
+            cube3_collapsed = collaps(cube03, latlim, press2, yr0)
+            cube4_collapsed = collaps(cube04, latlim, press2, yr0)
+            if variable1 == 'specific_humidity' :
+                cube01_collapsed = cube01_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
+                cube01_collapsed.rename('relative_humidity')
+                cube02_collapsed = cube02_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
+                cube02_collapsed.rename('relative_humidity')
+            if variable2 == 'specific_humidity' :
+                cube3_collapsed = cube3_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
+                cube3_collapsed.rename('relative_humidity')
+                cube4_collapsed = cube4_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
+                cube4_collapsed.rename('relative_humidity')
+            
             print "Taking difference between data to be compared"
-            q_final = q01_collapsed - q02_collapsed
-            w_final = w01_collapsed - w02_collapsed
+            cube1_final = cube01_collapsed - cube02_collapsed
+            cube3_final = cube3_collapsed - cube4_collapsed
             
             print "Calculating monthly mean data"
-            if run_monthly_means == "y":
-                if variable1 == 'specific_humidity' :
-                    q_month_mean = q_final*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
-                    q_month_mean.rename('relative_humidity')
-                if variable1 == 'air_temperature' : 
-                    q_month_mean = q_final 
-                    q_month_mean.rename('air_temperature')
-                if variable1 == 'upward_air_velocity': 
-                    q_month_mean = q_final
-                    q_month_mean.rename('upward_air_velocity')
-                #print "Difference in monthly mean for", variable1, "is: ",q_month_mean
-                q_months.append(q_month_mean) 
-                if variable2 == 'specific_humidity' : 
-                    w_month_mean = w_final*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
-                    w_month_mean.rename('relative_humidity')
-                if variable2 == 'air_temperature' : 
-                    w_month_mean = w_final 
-                    w_month_mean.rename('air_temperature')
-                if variable2 == 'upward_air_velocity': 
-                    w_month_mean = w_final
-                    w_month_mean.rename('upward_air_velocity')
-                #print "Difference in monthly mean for", variable2, "is: ",w_month_mean
-                w_months.append(w_month_mean) 
+            cube1_month_mean = cube1_final 
+            #print "Difference in monthly mean for", variable1, "is: ",cube1_month_mean
+            cube1_months.append(cube1_month_mean) 
+            cube3_month_mean = cube3_final 
+            #print "Difference in monthly mean for", variable2, "is: ",cube3_month_mean
+            cube3_months.append(cube3_month_mean) 
         
-            print "Calculating differences in annual mean"
-            q_final_mean = q_final.collapsed('t', iris.analysis.MEAN)
-            if variable1== 'specific_humidity' : q_diff_mean = q_final_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
-            if variable1 == 'air_temperature' : q_diff_mean = q_final_mean.data.item() # converting from 0d array to scalar 
-            if variable1 == 'upward_air_velocity': q_diff_mean = q_final_mean.data.item()
-            print "Difference in annual mean for", variable1, "is: ",q_diff_mean
-            q_mean.append(q_diff_mean) 
-            w_final_mean = w_final.collapsed('t', iris.analysis.MEAN)
-            if variable2 == 'specific_humidity' : wiff_mean = w_final_mean.data.item()*1.608e6 # 1.608e6 is the units conversion from kg.kg^-1 to ppmv, and converting from 0d array to scalar
-            if variable2 == 'air_temperature' : wiff_mean = w_final_mean.data.item() # converting from 0d array to scalar 
-            if variable2 == 'upward_air_velocity': wiff_mean = w_final_mean.data.item()
+            print "Calculating annual mean data"
+            cube1_final_mean = cube1_final.collapsed('t', iris.analysis.MEAN)
+            cube1_diff_mean = cube1_final_mean.data.item()
+            print "Difference in annual mean for", variable1, "is: ",cube1_diff_mean
+            cube1_mean.append(cube1_diff_mean) 
+            cube3_final_mean = cube3_final.collapsed('t', iris.analysis.MEAN)
+            wiff_mean = cube3_final_mean.data.item()
             print "Difference in annual mean for",variable2, " is: ",wiff_mean
-            w_mean.append(wiff_mean)        
+            cube3_mean.append(wiff_mean)        
 
-            print "Calculation of difference in seasonal cycle amplitude"
+            print "Calculating seasonal cycle amplitudes and climatological months"
             # Forming the climatological mean for t_start to t_end
             seasonal_cycle=[]
             climatological_month_data=[]
-              
-            w_diff_climatological_months = []  
-            for cube in [q01_collapsed,q02_collapsed,w01_collapsed,w02_collapsed]:
+            for cube in [cube01_collapsed,cube02_collapsed,cube3_collapsed,cube4_collapsed]:
                 (cmd, sca) = climatological_mean(cube)
                 climatological_month_data.append(cmd)
                 #print sca
@@ -229,68 +172,133 @@ def load_and_analyse():
             # Taking difference in seasonal cycle
             #print "sca is ", seasonal_cycle 
             #print "cmd is ", climatological_month_data
-            q_diff_in_seasonal_cycle = (seasonal_cycle[0]-seasonal_cycle[1])
-            w_diff_in_seasonal_cycle = (seasonal_cycle[2]-seasonal_cycle[3])
-            q_diff_climatological_months = climatological_month_data[0] - climatological_month_data[1]
-            #print "differencing the climatological months int he first comparison gives: \n", q_diff_climatological_months
-            w_diff_climatological_months = climatological_month_data[2] - climatological_month_data[3]  
-            if variable1 == 'specific_humidity': q_diff_in_seasonal_cycle *= 1.608e6        # 1.608e6 i s the units conversion from kg.kg^-1 to ppmv)
-            if variable2 == 'specific_humidity': w_diff_in_seasonal_cycle *= 1.608e6        # 1.608e6 is the units conversion from kg.kg^-1 to ppmv)
-            print "Difference in seasonal cycle for ",variable1,"is: ", q_diff_in_seasonal_cycle
-            q_season.append(q_diff_in_seasonal_cycle)
-            q_climatological_months.append(q_diff_climatological_months)
-            print "Difference in seasonal cycle for ",variable2,"is: ", w_diff_in_seasonal_cycle
-            w_season.append(w_diff_in_seasonal_cycle) 
-            w_climatological_months.append(w_diff_climatological_months)
+            cube1_diff_in_seasonal_cycle = (seasonal_cycle[0]-seasonal_cycle[1])
+            cube3_diff_in_seasonal_cycle = (seasonal_cycle[2]-seasonal_cycle[3])
+            cube1_diff_climatological_months = climatological_month_data[0] - climatological_month_data[1]
+            #print "differencing the climatological months int he first comparison gives: \n", cube1_diff_climatological_months
+            cube3_diff_climatological_months = climatological_month_data[2] - climatological_month_data[3]  
+            print "Difference in seasonal cycle for ",variable1,"is: ", cube1_diff_in_seasonal_cycle
+            cube1_season.append(cube1_diff_in_seasonal_cycle)
+            cube1_climatological_months.append(cube1_diff_climatological_months)
+            print "Difference in seasonal cycle for ",variable2,"is: ", cube3_diff_in_seasonal_cycle
+            cube3_season.append(cube3_diff_in_seasonal_cycle) 
+            cube3_climatological_months.append(cube3_diff_climatological_months)
             print "End this loop OK"    
 
-        print "All loops finished OK. Results outputs are:"
-        print "q_mean\n", q_mean
-        print "q_season\n", q_season
-        print "q_months\n", q_months
-        print "q_climatological_months\n", q_climatological_months
-        print "w_mean\n", w_mean
-        print "w_season\n", w_season
-        print "w_months\n", w_months
-        print "w_climatological_months\n", w_climatological_months
-return(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season, w_months, q_climatological_months, w_climatological_months, field_titles, press1, press2)
+    elif calc_type ==2:
+        for i in range(len(filenames1)): # Loop over all comparison runs
+            print "Calculating for ", field_titles[i]
+            print "Loading cubes"
+            cube1= iris.load_cube(filenames1[i], variable1)
+            cube3= iris.load_cube(filenames1[i], variable2)
 
-def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season, w_months, q_climatological_months, w_climatological_months, field_titles, press1, press2):
-    print "PLOTTING ###yet to be converted to absolute values"
+            print "Calculating region in time suitable for comparison"
+            ## Can modify so that script takes maximum number of 12-month periods from cube1_01.coord('t').points
+            t_start = 1999 #input("Starting year? Expect 1999.")
+            t_end = 2008 #input("Endingyear? Expect 2008.")
+            yr0 = (cube1.coord('t').points >= (t_start-1-1988)*360+120) & (cube1.coord('t').points < (t_end-1988)*360+120)
+            #print yr0
+            
+            print "Collapsing data to average over selected regions"
+            cube1_collapsed = collaps(cube1, latlim, press1, yr0)
+            cube3_collapsed = collaps(cube3, latlim, press2, yr0)
+            if variable1 == 'specific_humidity' : # Converting mixing ratio from 'per unit mass' to 'per unit volume'
+                cube1_collapsed = cube1_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
+                cube1_collapsed.rename('relative_humidity')
+            if variable2 == 'specific_humidity' : 
+                cube3_collapsed = cube3_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
+                cube3_collapsed.rename('relative_humidity')
+            
+            print "Calculating monthly means"
+            cube1_month_mean = cube1_collapsed 
+            cube1_months.append(cube1_month_mean) 
+            cube3_month_mean = cube3_collapsed 
+            cube3_months.append(cube3_month_mean) 
+
+            print "Calculating annual means"
+            cube1_annual = cube1_collapsed.collapsed('t', iris.analysis.MEAN)
+            cube1_diff_mean = cube1_annual.data.item()
+            print "Annual mean for", variable1, "is: ",cube1_diff_mean
+            cube1_mean.append(cube1_diff_mean) 
+            cube3_annual = cube3_collapsed.collapsed('t', iris.analysis.MEAN)
+            cube3_diff_mean = cube3_annual.data.item()
+            print "Annual mean for",variable2, " is: ", cube3_diff_mean
+            cube3_mean.append(cube3_diff_mean)
+
+            print "Calculation of seasonal cycle amplitude"
+            # Forming the climatological mean for t_start to t_end
+            seasonal_cycle=[]
+            climatological_month_data=[]
+            for cube in [cube1_collapsed,cube3_collapsed]:
+                (cmd, sca) = climatological_mean(cube)
+                climatological_month_data.append(cmd)
+                #print sca
+                #print type(sca)
+                seasonal_cycle.append(sca)
+                #print "Seasonal cycle is", seasonal_cycle
+                #print "After calling the function, the climatological month cube is \n\n", cmd 
+                #print "and its type is ", type(cmd )
+                #print "The list of climatological month cubes is \n\n", climatological_month_data
+                #print "and its type is ", type(climatological_month_data)
+            # Taking difference in seasonal cycle
+            #print "sca is ", seasonal_cycle 
+            #print "cmd is ", climatological_month_data
+            print "Seasonal cycle for ",variable1,"is: ", seasonal_cycle[0]
+            cube1_season.append(seasonal_cycle[0])
+            cube1_climatological_months.append(climatological_month_data[0])
+            print "Seasonal cycle for ",variable2,"is: ", seasonal_cycle[1]
+            cube3_season.append(seasonal_cycle[1]) 
+            cube3_climatological_months.append(climatological_month_data[1])
+            
+            print "End this loop OK"
+
+    print "All loops finished OK. Results outputs are:"
+    print "cube1_mean\n", cube1_mean
+    print "cube1_season\n", cube1_season
+    print "cube1_months\n", cube1_months
+    print "cube1_climatological_months\n", cube1_climatological_months
+    print "cube3_mean\n", cube3_mean
+    print "cube3_season\n", cube3_season
+    print "cube3_months\n", cube3_months
+    print "cube3_climatological_months\n", cube3_climatological_months
+    return(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2)
+
+def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2):
+    print "PLOTTING"
 
     # Plot options from (1-4), switch the comments so that the preferred one is active
     response = input("What do you want to plot for "+variable1+" and "+variable2+"?\n 1) annual mean vs. annual mean\n 2) annual mean vs. amplitude of seasonal cycle\n 3) amplitude of seasonal cycle vs. annual mean\n 4) amplitude of seasonal cycle vs. amplitude of seasonal cycle\n 5) Monthly data vs. monthly data \n 6) Climatological months vs. climatological months\n Please type 1, 2, 3, 4, 5, or 6.")
     if response == 1:
-        x = q_mean
-        y = w_mean
+        x = cube1_mean
+        y = cube3_mean
         xname = "annual mean"
         yname = "annual mean"
     elif response == 2:
-        x = q_mean
-        y = w_season
+        x = cube1_mean
+        y = cube3_season
         xname = "annual mean"
         yname = "amplitude of seasonal cycle"
     elif response == 3:
-        x = q_season
-        y = q_mean
+        x = cube1_season
+        y = cube1_mean
         xname = "amplitude of seasonal cycle"
         yname = "annual mean"
     elif response == 4:
-        x = q_season
-        y = w_season
+        x = cube1_season
+        y = cube3_season
         xname = "amplitude of seasonal cycle"
         yname = "amplitude of seasonal cycle"
     elif response == 5:
         lag_steps = input("How many months (timesteps) of lag do you want? Please type 0, 1, 2 or 3 etc.")
-        x = q_months
-        y = w_months
+        x = cube1_months
+        y = cube3_months
         xname = "monthly mean"
         if lag_steps is not 0: yname = "monthly mean (lagged)"
         else: yname = "monthly mean"
     elif response == 6:
         lag_steps = input("How many months (timesteps) of lag do you want? Please type 0, 1, 2 or 3 etc.")
-        x = q_climatological_months
-        y = w_climatological_months
+        x = cube1_climatological_months
+        y = cube3_climatological_months
         xname = "climatological months"
         if lag_steps is not 0: yname = "climatological months(lagged)"
         else: yname = "climatological months"
@@ -369,12 +377,16 @@ def plotting(variable1, variable2, q_mean, q_season, q_months, w_mean, w_season,
         plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months")    
     if m >= -0.1:  plt.legend(field_titles, loc=2)
     else: plt.legend(field_titles, loc=3)
-    if variable1 == 'air_temperature': plt.xlabel("difference to T"+xname+" (C)")
-    if variable1 == 'specific_humidity': plt.xlabel("difference to q "+xname+"(ppmv)")
-    if variable1 == 'upward_air_velocity': plt.xlabel("difference to w"+xname+" (units unknown)")
-    if variable2 == 'specific_humidity': plt.ylabel("difference to q "+yname+" (ppmv)")
-    if variable2 == 'air_temperature': plt.ylabel("difference to T "+yname+" (C)")
-    if variable2 == 'upward_air_velocity': plt.ylabel("difference to w "+yname+" (units unknown)")
+    if calc_type == 1:
+        comment = "Difference to "
+    elif calc_type == 2:
+        comment = ""
+    if variable1 == 'air_temperature': plt.xlabel(comment, "T"+xname+" (C)")
+    if variable1 == 'specific_humidity': plt.xlabel(comment, "cube1 "+xname+"(ppmv)")
+    if variable1 == 'upward_air_velocity': plt.xlabel(comment, " w"+xname+" (units unknown)")
+    if variable2 == 'specific_humidity': plt.ylabel(comment, " cube1 "+yname+" (ppmv)")
+    if variable2 == 'air_temperature': plt.ylabel(comment, " T "+yname+" (C)")
+    if variable2 == 'upward_air_velocity': plt.ylabel(comment, " w "+yname+" (units unknown)")
 
     plt.show()
     return()
