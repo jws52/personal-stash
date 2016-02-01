@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os.path
 
+print "functions of use are \n (variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type) = load_and_analyse()"
+
+print "\nand \nplotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type)"
+
     # Function for collapsing data to average over selected regions
 def collaps(cube, latlim, press, yr0):
     cube_zonal = cube.collapsed('longitude', iris.analysis.MEAN) # zonal mean
@@ -16,6 +20,53 @@ def collaps(cube, latlim, press, yr0):
     cube_final = cube_trop_zonal.extract(iris.Constraint(Pressure=press)) # Select the pressure level
     cube_final_t = cube_final[yr0] # Select the time region
     return cube_final_t
+
+### Test functions to fit ellipse
+from numpy.linalg import eig, inv
+
+def fitEllipse(x,y):
+    x = x[:,np.newaxis]
+    y = y[:,np.newaxis]
+    D =  np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
+    S = np.dot(D.T,D)
+    C = np.zeros([6,6])
+    C[0,2] = C[2,0] = 2; C[1,1] = -1
+    E, V =  eig(np.dot(inv(S), C))
+    n = np.argmax(np.abs(E))
+    a = V[:,n]
+    return a
+
+def ellipse_center(a):
+    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
+    num = b*b-a*c
+    x0=(c*d-b*f)/num
+    y0=(a*f-b*d)/num
+    return np.array([x0,y0])
+
+def ellipse_angle_of_rotation2( a ):
+    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
+    if b == 0:
+        if a > c:
+            return 0
+        else:
+            return np.pi/2
+    else:
+        if a > c:
+            return np.arctan(2*b/(a-c))/2
+        else:
+            return np.pi/2 + np.arctan(2*b/(a-c))/2
+
+def ellipse_axis_length( a ):
+    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
+    up = 2*(a*f*f+c*d*d+g*b*b-2*b*d*f-a*c*g)
+    down1=(b*b-a*c)*( (c-a)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
+    down2=(b*b-a*c)*( (a-c)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
+    res1=np.sqrt(up/down1)
+    res2=np.sqrt(up/down2)
+    return np.array([res1, res2])
+
+### End of test functions
+
 
 def climatological_mean(cube):
     climatological_month_data=[]
@@ -304,8 +355,8 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         else: yname = "climatological months"
     else: print "Cannot plot"
     
-    ### Extra fields in calc_type == 2 at the beginning of list means that this colour cycle fails to apply to the same fields.
-    plt.gca().set_color_cycle(['limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'])
+    colours =['dimgrey','lightcoral','khaki','limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'] 
+    plt.gca().set_color_cycle(colours)
  
     if response in (1, 2, 3, 4):
         # Plot
@@ -345,7 +396,7 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
     elif response is 6:
         # Plot
         if lag_steps == 0: 
-            for j in range(len(x)): plt.plot(x[j].data[:],y[j].data[:], 'o', markersize=6)
+            for j in range(len(x)): plt.plot(x[j].data,y[j].data, '-', markersize=6)
         else: 
             #jmoded = range(len(x))
             #jmoded = jmod[lag_steps:] + jmod[:lag_steps]
@@ -355,9 +406,12 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
                ymod[j] = []
                ymod[j].extend(y[j][lag_steps:].data)
                ymod[j].extend(y[j][:lag_steps].data)
-               print "ymod is\n", ymod
-               print "y is \n", y[j][:].data
-               plt.plot(x[j].data[:],ymod[j][:], 'o', markersize=6)
+               print "ymod[j] is\n", ymod[j]
+               print "type of ymod[j] is ", type(ymod[j][:])
+               print "y is \n", y[j].data
+               print "x is \n", x[j].data
+               print "type of x[j].data is", type(x[j].data[:])
+               plt.plot(x[j].data,ymod[j][:] ,'-', markersize=6)
         # Regression lines
         # Defining variables
         m =[0]*len(x)
@@ -365,19 +419,21 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         pearR = [0]*len(x)
         plot_levels = []
         plot_levels += [i*0.029 for i in range(1+len(x))] #for spacing of figtext
-        plt.figtext(0.45, 0.88-plot_levels[0],"Correlation R =    and slope of fitted line m =")
+        plt.figtext(0.15, 0.88-plot_levels[0],"Correlation R =    and slope of fitted line m =")
         for j in range(len(x)):
             if lag_steps == 0:
                  m[j], b[j] = np.polyfit(x[j].data,y[j].data, 1)
                  pearR[j] = np.corrcoef(x[j].data,y[j].data)[1,0]           
             else:
                  m[j], b[j] = np.polyfit(x[j].data,ymod[j], 1)
-                 pearR[j] = np.corrcoef(x[j].data,ymod[j])[1,0]         
+                 pearR[j] = np.corrcoef(x[j].data[:],ymod[j][:])[1,0]         
             plt.plot(x[j].data, [(m[j]*x1 + b[j]) for x1 in x[j].data], '-', linewidth=2)
-            plt.figtext(0.45, 0.88-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"             m = "+'{:.1E}'.format(m[j]))
+            plt.figtext(0.15, 0.88-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"             m = "+'{:.1E}'.format(m[j]))
         plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months")    
-    if m >= -0.1:  plt.legend(field_titles, loc=2)
-    else: plt.legend(field_titles, loc=3)
+    if m >= -0.1:  leg = plt.legend(field_titles, loc=4)
+    else: leg = plt.legend(field_titles, loc=3)
+    for legobj in leg.legendHandles:
+        legobj.set_linewidth(2.0)
     if calc_type == 1:
         comment = "Difference to "
     elif calc_type == 2:
