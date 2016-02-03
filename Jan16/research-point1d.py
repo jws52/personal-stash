@@ -7,10 +7,11 @@ import iris.coord_categorisation
 import matplotlib.pyplot as plt
 import numpy as np
 import os.path
+import math
 
-print "functions of use are \n (variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type) = load_and_analyse()"
+print "functions of use are \n (variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type, latlim) = load_and_analyse()"
 
-print "\nand \nplotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type)"
+print "\nand \nplotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type, latlim)"
 
     # Function for collapsing data to average over selected regions
 def collaps(cube, latlim, press, yr0):
@@ -20,53 +21,6 @@ def collaps(cube, latlim, press, yr0):
     cube_final = cube_trop_zonal.extract(iris.Constraint(Pressure=press)) # Select the pressure level
     cube_final_t = cube_final[yr0] # Select the time region
     return cube_final_t
-
-### Test functions to fit ellipse
-from numpy.linalg import eig, inv
-
-def fitEllipse(x,y):
-    x = x[:,np.newaxis]
-    y = y[:,np.newaxis]
-    D =  np.hstack((x*x, x*y, y*y, x, y, np.ones_like(x)))
-    S = np.dot(D.T,D)
-    C = np.zeros([6,6])
-    C[0,2] = C[2,0] = 2; C[1,1] = -1
-    E, V =  eig(np.dot(inv(S), C))
-    n = np.argmax(np.abs(E))
-    a = V[:,n]
-    return a
-
-def ellipse_center(a):
-    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
-    num = b*b-a*c
-    x0=(c*d-b*f)/num
-    y0=(a*f-b*d)/num
-    return np.array([x0,y0])
-
-def ellipse_angle_of_rotation2( a ):
-    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
-    if b == 0:
-        if a > c:
-            return 0
-        else:
-            return np.pi/2
-    else:
-        if a > c:
-            return np.arctan(2*b/(a-c))/2
-        else:
-            return np.pi/2 + np.arctan(2*b/(a-c))/2
-
-def ellipse_axis_length( a ):
-    b,c,d,f,g,a = a[1]/2, a[2], a[3]/2, a[4]/2, a[5], a[0]
-    up = 2*(a*f*f+c*d*d+g*b*b-2*b*d*f-a*c*g)
-    down1=(b*b-a*c)*( (c-a)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
-    down2=(b*b-a*c)*( (a-c)*np.sqrt(1+4*b*b/((a-c)*(a-c)))-(c+a))
-    res1=np.sqrt(up/down1)
-    res2=np.sqrt(up/down2)
-    return np.array([res1, res2])
-
-### End of test functions
-
 
 def climatological_mean(cube):
     climatological_month_data=[]
@@ -114,9 +68,9 @@ def load_and_analyse():
         for name in ['dkwyj', 'dlvpd', 'dkytg', 'antng', 'anxal', 'dlkxi', 'dlhbk', 'anvti', 'aojed']: filenames1 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',) 
         field_titles = ('theta vertical advection - interpolation', 'theta vertical advection - conservation', 'q vertical advection - interpolation', 'radiative heating', 'ice optics','ice microphysics', 'convection','cirrus spreading rate', 'ozone radiative feedback')
     elif calc_type == 2:
-        for name in ['anmxa', 'aojeb', 'antie', 'dkwyj', 'dlvpd', 'dkytg', 'antng', 'anxal', 'dlkxi', 'dlhbk', 'anvti', 'aojed']: filenames1 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',) 
+        for name in ['antie', 'dkwyj', 'dlvpd', 'dkytg', 'antng', 'anxal', 'dlkxi', 'dlhbk', 'anvti', 'aojed']: filenames1 += ('/group_workspaces/jasmin2/ukca/vol1/jsmith52/tq-selections/tq-selection-'+name+'.nc',) 
         filenames2 = filenames1  
-        field_titles = ('baseline1 (for theta vert. advect. interp.)', 'baseline3 (for ozone radiatibve feedback)', 'baseline2 (for the rest)', 'theta vertical advection - interpolation', 'theta vertical advection - conservation', 'q vertical advection - interpolation', 'radiative heating', 'ice optics','ice microphysics', 'convection','cirrus spreading rate', 'ozone radiative feedback')
+        field_titles = ('baseline (for the all exc. \'theta...int.\')', 'theta vertical advection - interpolation', 'theta vertical advection - conservation', 'q vertical advection - interpolation', 'radiative heating', 'ice optics','ice microphysics', 'convection','cirrus spreading rate', 'ozone radiative feedback')
         
     # ANALYSIS
     hum_ratio = iris.coords.AuxCoord(1.608E6, long_name='Unit conversion from specific humidity to relative humidity by volume', units ='ppmv/kg.kg^-1')
@@ -177,12 +131,18 @@ def load_and_analyse():
                 cube01_collapsed.rename('relative_humidity')
                 cube02_collapsed = cube02_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 cube02_collapsed.rename('relative_humidity')
+            elif variable1 == 'upward_air_velocity': 
+                cube01_collapsed = cube01_collapsed*1000 # convert from m/s to mm/s
+                cube02_collapsed = cube02_collapsed*1000 # convert from m/s to mm/s
             if variable2 == 'specific_humidity' :
                 cube3_collapsed = cube3_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 cube3_collapsed.rename('relative_humidity')
                 cube4_collapsed = cube4_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 cube4_collapsed.rename('relative_humidity')
-            
+            elif variable2 == 'upward_air_velocity': 
+                cube3_collapsed = cube3_collapsed*1000 # convert from m/s to mm/s
+                cube4_collapsed = cube4_collapsed*1000 # convert from m/s to mm/s
+           
             print "Taking difference between data to be compared"
             cube1_final = cube01_collapsed - cube02_collapsed
             cube3_final = cube3_collapsed - cube4_collapsed
@@ -256,9 +216,13 @@ def load_and_analyse():
             if variable1 == 'specific_humidity' : # Converting mixing ratio from 'per unit mass' to 'per unit volume'
                 cube1_collapsed = cube1_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 cube1_collapsed.rename('relative_humidity')
+            elif variable1 == 'upward_air_velocity':
+                cube1_collapsed = cube1_collapsed*1000 # convert from m/s to mm/s
             if variable2 == 'specific_humidity' : 
                 cube3_collapsed = cube3_collapsed*hum_ratio # hum_ratio is units conversion from kg.kg^-1 to ppmv
                 cube3_collapsed.rename('relative_humidity')
+            elif variable2 == 'upward_air_velocity':
+                cube3_collapsed = cube3_collapsed*1000 # convert from m/s to mm/s
             
             print "Calculating monthly means"
             cube1_month_mean = cube1_collapsed 
@@ -312,9 +276,9 @@ def load_and_analyse():
     print "cube3_season\n", cube3_season
     print "cube3_months\n", cube3_months
     print "cube3_climatological_months\n", cube3_climatological_months
-    return(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type)
+    return(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type, latlim)
 
-def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type):
+def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3_mean, cube3_season, cube3_months, cube1_climatological_months, cube3_climatological_months, field_titles, press1, press2, calc_type, latlim):
     print "PLOTTING"
 
     # Plot options from (1-4), switch the comments so that the preferred one is active
@@ -355,8 +319,10 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         else: yname = "climatological months"
     else: print "Cannot plot"
     
-    colours =['dimgrey','lightcoral','khaki','limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'] 
+    if len(x) == 10: colours =['dimgrey','limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'] 
+    elif len(x) == 9: colours =['limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'] 
     plt.gca().set_color_cycle(colours)
+    ax = plt.subplot(111)
  
     if response in (1, 2, 3, 4):
         # Plot
@@ -365,9 +331,9 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         # Regression line
         m, b = np.polyfit(x, y, 1)
         pearR = np.corrcoef(x, y)[1,0]
-        plt.plot(x, [(m*x1 + b) for x1 in x], '-')
-        plt.figtext(0.6, 0.25, "Correlation R = "+'{:4.2f}'.format(pearR))
-        plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)")
+        ax.plot(x, [(m*x1 + b) for x1 in x], '-')
+        plt.figtext(0.15, 0.8, "Correlation R = "+'{:4.2f}'.format(pearR))
+        plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa) within"+str(latlim)+"degN/S")
 
     elif response is 5:
         # Plot
@@ -382,7 +348,7 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         pearR = [0]*len(x)
         plot_levels = []
         plot_levels += [i*0.029 for i in range(1+len(x))]
-        plt.figtext(0.45, 0.88-plot_levels[0],"Correlation R =    and slope of fitted line m =")
+        plt.figtext(0.60, 0.40-plot_levels[0],"Correlation R =    and slope of fitted line m =")
         for j in range(len(x)):
             if lag_steps == 0:
                  m[j], b[j] = np.polyfit(x[j].data,y[j].data, 1)
@@ -390,9 +356,9 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
             else:
                  m[j], b[j] = np.polyfit(x[j].data[:-1*lag_steps],y[j].data[lag_steps:], 1)
                  pearR[j] = np.corrcoef(x[j].data[:-1*lag_steps],y[j].data[lag_steps:])[1,0]         
-            plt.plot(x[j].data, [(m[j]*x1 + b[j]) for x1 in x[j].data], '-', linewidth=2)
-            plt.figtext(0.45, 0.88-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"             m = "+'{:.1E}'.format(m[j]))
-        plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months")    
+            ax.plot(x[j].data, [(m[j]*x1 + b[j]) for x1 in x[j].data], '-', linewidth=2)
+            plt.figtext(0.60, 0.40-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"           m = "+'{:.1E}'.format(m[j]))
+        plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months and within"+str(latlim)+"degN/S")    
     elif response is 6:
         # Plot
         if lag_steps == 0: 
@@ -419,7 +385,7 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
         pearR = [0]*len(x)
         plot_levels = []
         plot_levels += [i*0.029 for i in range(1+len(x))] #for spacing of figtext
-        plt.figtext(0.15, 0.88-plot_levels[0],"Correlation R =    and slope of fitted line m =")
+        ax.figtext(0.15, 0.88-plot_levels[0],"Correlation R =    and slope of fitted line m =")
         for j in range(len(x)):
             if lag_steps == 0:
                  m[j], b[j] = np.polyfit(x[j].data,y[j].data, 1)
@@ -427,24 +393,43 @@ def plotting(variable1, variable2, cube1_mean, cube1_season, cube1_months, cube3
             else:
                  m[j], b[j] = np.polyfit(x[j].data,ymod[j], 1)
                  pearR[j] = np.corrcoef(x[j].data[:],ymod[j][:])[1,0]         
-            plt.plot(x[j].data, [(m[j]*x1 + b[j]) for x1 in x[j].data], '-', linewidth=2)
-            plt.figtext(0.15, 0.88-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"             m = "+'{:.1E}'.format(m[j]))
-        plt.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months")    
-    if m >= -0.1:  leg = plt.legend(field_titles, loc=4)
-    else: leg = plt.legend(field_titles, loc=3)
+            ax.plot(x[j].data, [(m[j]*x1 + b[j]) for x1 in x[j].data], '-', linewidth=2)
+            ax.figtext(0.15, 0.88-plot_levels[j+1],"R = "+'{:4.2f}'.format(pearR[j])+"             m = "+'{:.1E}'.format(m[j]))
+        ax.title(variable1+"("+str(press1)+"hPa) against "+variable2+" ("+str(press2)+"hPa)"+"with time lag of "+str(lag_steps)+"months within"+str(latlim)+"degN/S")    
+    if response in [5, 6]:
+        plotCCeqn = raw_input("Do you want Clausius-Clapeyron line plotting over graph (y/n)?")
+        if plotCCeqn not in ['y','n']: plotCCeqn = raw_input("Not understood, try again, please type y or n only")
+        if plotCCeqn in 'y':
+            ### Calculate CCeqn
+            print x[0]
+            if   variable1 == 'air_temperature': T = range(int(x[0].collapsed('t',iris.analysis.MIN).data)-1, int(x[0].collapsed('t',iris.analysis.MAX).data)+1,1)
+            elif variable2 == 'air_temperature': T = range(np.min(y[0].data)-1, np.max(y[0].data)+1,0.25)
+            Th = []
+            for i in range(len(T)): Th += [T[i]/273.16]
+            p = input("What pressure level do you want plotting? (in Pa)")
+            CCeqn = []
+            # Note: valid for 50K to 273.16K (ref. Wagner et al. [2011]) ### Work on this, check that pressure level representation is correct. ###
+            for i in range(len(T)): CCeqn += [(1000000/p)*611.657*math.exp((1/Th[i])*(-21.2144006*Th[i]**0.00333333333 + 27.3203819*Th[i]**1.2066667 -6.10598130*Th[i]**1.70333333))]
+            ###
+            plt.plot(T, CCeqn, 'k-', linewidth=2)
+        
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0+box.height*0.45, box.width, box.height*0.55])
+    if m >= -0.1: leg = ax.legend(field_titles, handlelength=0.8, loc = 'upper center', bbox_to_anchor=(0.3, -0.1))
+    else: leg = ax.legend(field_titles, loc=3, handlelength=0.8)
     for legobj in leg.legendHandles:
         legobj.set_linewidth(2.0)
     if calc_type == 1:
         comment = "Difference to "
     elif calc_type == 2:
         comment = ""
-    if variable1 == 'air_temperature': plt.xlabel(comment+"T"+xname+" (C)")
-    if variable1 == 'specific_humidity': plt.xlabel(comment+"q "+xname+"(ppmv)")
-    if variable1 == 'upward_air_velocity': plt.xlabel(comment+"w"+xname+" (units unknown)")
-    if variable2 == 'specific_humidity': plt.ylabel(comment+"q "+yname+" (ppmv)")
-    if variable2 == 'air_temperature': plt.ylabel(comment+"T "+yname+" (C)")
-    if variable2 == 'upward_air_velocity': plt.ylabel(comment+"w "+yname+" (units unknown)")
-
+    if variable1 == 'air_temperature':     plt.xlabel(comment+"T"+xname+" (C)")
+    if variable1 == 'specific_humidity':   plt.xlabel(comment+"q "+xname+"(ppmv)")
+    if variable1 == 'upward_air_velocity': plt.xlabel(comment+"w"+xname+" (mm/s)")
+    if variable2 == 'specific_humidity':   plt.ylabel(comment+"q "+yname+" (ppmv)")
+    if variable2 == 'air_temperature':     plt.ylabel(comment+"T "+yname+" (C)")
+    if variable2 == 'upward_air_velocity': plt.ylabel(comment+"w "+yname+" (mm/s)")
+    
     plt.show()
     return()
     # then compare the results to those in Met Office plots
