@@ -15,21 +15,26 @@ for name in ['dkwyj', 'dlvpd', 'dkytg', 'antng', 'anxal', 'dlkxi', 'dlhbk', 'anv
 field_titles = ('theta vertical advection - interpolation', 'theta vertical advection - conservation', 'q vertical advection - interpolation', 'radiative heating', 'ice optics','ice microphysics', 'convection','cirrus spreading rate', 'ozone radiative feedback')
 variables = ['specific_humidity','air_temperature']
 variable = raw_input(["Which variable to use?", variables, "(please type explicitly"])
-tropic_lats = iris.Constraint(latitude = lambda l: -10<=l<=10) # constrains loaded data to the tropical latitudes -10deg to +10deg
+latlim = input("what latitude limit do you want to take for the tropical meridional mean?  (symmetrical in degrees e.g Type 10 to get mean over 10N to 10S.)")
+if latlim < 0: latlim = input(["Not recognised, try again, enter a number >= 0"])
+tropic_lats = iris.Constraint(latitude = lambda l: -latlim<=l<=latlim) # constrains loaded data to the tropical latitudes
 
 # ANALYSIS
 q_mean = [] # Location for saved data during looping for annual mean in each comparison
 q_season = [] # Location for saved data during looping for seasonal cycle amplitude in each comparison
 # Loop over all comparison runs
 for i in range(len(filenames1)):  
+
     # Check files exist 
     if os.path.isfile(filenames1[i]) == False: print("Error: An experiment ID not found."); continue 
     if os.path.isfile(filenames2[i]) == False: print("Error: An experiment ID not found."); continue
+
     # Load cubes specifically for q in tropics
     cube1= iris.load(filenames1[i], variable & tropic_lats)
     cube2= iris.load(filenames2[i], variable & tropic_lats)
     q1= cube1[0]
     q2= cube2[0]
+
     # Selecting the overlapping time periods
     time_coord1 = q1.coord('t')
     time_coord2 = q2.coord('t')
@@ -39,6 +44,7 @@ for i in range(len(filenames1)):
     q02 = q2[t_range2,:,:,:]
     #print('New time co-ordinate range is for set 1: /n',q01.coord('t'))
     #print('New time co-ordinate range is for set 2: /n',q02.coord('t'))
+
     # Extracting region in time suitable for comparison
     ### Can modify so that script takes maximum number of 12-month periods from q_01.coord('t').pointsi instead of suitable time region
     t_start = 1999
@@ -89,8 +95,8 @@ for i in range(len(filenames1)):
     ### For annual mean bias profile in vertical
     #plt.subplot(211)
     plt.plot(q_mean_averaged.data, q_mean_averaged.coord('Pressure').points) 
-    plt.legend(field_titles, loc=4)
-    ### For difference in seasonal cycle profile in vertical
+    if variable == 'specific_humidity': plt.legend(field_titles, loc=2)   ### For difference in seasonal cycle profile in vertical
+    elif variable == 'air_temperature': plt.legend(field_titles, loc=3)   ### For difference in seasonal cycle profile in vertical
     #plt.subplot(212)
     #plt.gca().set_color_cycle(['limegreen', 'green','deepskyblue', 'yellow', 'magenta', 'darkviolet','darkorange','darkgrey','blue'])
     #plt.plot(q_season_averaged.data, q_season_averaged.coord('Pressure').points) 
@@ -99,11 +105,11 @@ for i in range(len(filenames1)):
 ### plt.axes labels and legends
 #plt.subplot(211)
 plt.plot([0 for x in q_season_averaged.coord('Pressure').points],q_season_averaged.coord('Pressure').points, 'k--')
-plt.title('Vertical profile of annual mean bias for'+variable)
+plt.title('Vertical profile of annual mean bias for'+variable+'within '+str(latlim)+'degN/S')
 plt.yscale('log')
 plt.ylim(50, 250)
 plt.yticks([250, 200, 100, 80, 60, 50], ['250', '200', '100', '80', '60', '50'])
-if variable == 'specific_humidity': plt.xlim(-5, 5)
+if variable == 'specific_humidity': plt.xlim(-5,5)
 if variable == 'air_temperature': plt.xlim(-2.6, 2.6)
 plt.ylabel('pressure (hPa)')
 if variable == 'specific_humidity': plt.xlabel('difference (ppmv)')
